@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const co = require('co');
 
 module.exports = function (clients, utils) {
   const rtm = clients.rtm;
@@ -8,18 +9,18 @@ module.exports = function (clients, utils) {
   const Events = clients.RTMClientEvents;
 
   const masterId = '=bw74b';
+
   let me;
+
+  const getMe = co.wrap(function *() {
+    const data = yield http.user.me();
+    me = data;
+    return data;
+  });
 
   getMe();
 
   rtm.on(Events.EVENT, handleRTMEvent);
-
-  function getMe() {
-    return http.user.me()
-      .then(function (data) {
-        me = data;
-      })
-  }
 
   function handleRTMEvent(message) {
     switch (message.type) {
@@ -49,10 +50,11 @@ module.exports = function (clients, utils) {
     add(...mentionStrings) {
       const message = this;
 
-      const reply = utils.createReplyFunction(rtm, {
+      const reply = utils.createReplyWithTyping(rtm, {
         refer_key: message.key,
         vchannel_id: message.vchannel_id,
-        channel_id: message.channel_id
+        channel_id: message.channel_id,
+        uid: me.id
       });
 
       const userIds = mentionStrings.map(function (u) {
@@ -69,25 +71,29 @@ module.exports = function (clients, utils) {
         return;
       }
 
-      Promise.all(userIds.map(function (uid) {
-        return http.channel.invite({
-          channel_id: message.channel_id,
-          invite_uid: uid
-        });
-      })).then(function () {
-        reply('加完啦！');
-      }).catch(function (e) {
-        reply('没加成，出错了：' + e.message);
+      co(function *() {
+        try {
+          yield userIds.map(function (uid) {
+            return http.channel.invite({
+              channel_id: message.channel_id,
+              invite_uid: uid
+            });
+          });
+          reply('加完啦！');
+        } catch (e) {
+          reply('出错了：' + e.message);
+        }
       });
     },
 
     kick(...mentionStrings) {
       const message = this;
 
-      const reply = utils.createReplyFunction(rtm, {
+      const reply = utils.createReplyWithTyping(rtm, {
         refer_key: message.key,
         vchannel_id: message.vchannel_id,
-        channel_id: message.channel_id
+        channel_id: message.channel_id,
+        uid: me.id
       });
 
       const userIds = mentionStrings.map(function (u) {
@@ -109,15 +115,63 @@ module.exports = function (clients, utils) {
         return;
       }
 
-      Promise.all(userIds.map(function (uid) {
-        return http.channel.kick({
-          channel_id: message.channel_id,
-          kick_uid: uid
-        });
-      })).then(function () {
-        reply('踢完啦');
-      }).catch(function (e) {
-        reply('没踢成，出错了：' + e.message);
+      co(function *() {
+        try {
+          yield userIds.map(function (uid) {
+            return http.channel.kick({
+              channel_id: message.channel_id,
+              kick_uid: uid
+            });
+          });
+          reply('踢完啦');
+        } catch (e) {
+          reply('出错了：' + e.message);
+        }
+      });
+    },
+
+    archive() {
+      const message = this;
+
+      const reply = utils.createReplyWithTyping(rtm, {
+        refer_key: message.key,
+        vchannel_id: message.vchannel_id,
+        channel_id: message.channel_id,
+        uid: me.id
+      });
+
+      co(function *() {
+        try {
+          yield http.channel.archive({
+            channel_id: message.channel_id
+          });
+          reply('拜拜');
+        } catch (e) {
+          reply('出错了：' + e.message);
+        }
+      });
+    },
+
+    leave() {
+      const message = this;
+
+      const reply = utils.createReplyWithTyping(rtm, {
+        refer_key: message.key,
+        vchannel_id: message.vchannel_id,
+        channel_id: message.channel_id,
+        uid: me.id
+      });
+
+      co(function *() {
+        try {
+          yield http.channel.kick({
+            channel_id: message.channel_id,
+            kick_uid: message.uid
+          });
+          reply(utils.createMentionString(message.uid) + ' 慢走，不送');
+        } catch (e) {
+          reply('出错了：' + e.message);
+        }
       });
     }
   };

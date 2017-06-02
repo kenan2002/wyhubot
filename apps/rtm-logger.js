@@ -30,4 +30,4 @@ function RTMLogger(clients) {
     console.log('ERROR');
     console.error(errorEvent);
   }
-};
+}

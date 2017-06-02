@@ -25,12 +25,16 @@ bearychat-rtm-client@^0.4.0:
     delay "^2.0.0"
     invariant "^2.2.2"
 
-bearychat@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/bearychat/-/bearychat-1.1.0.tgz#d8d3721971537c5017d8bd0434e205c7caeedfcd"
+bearychat@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/bearychat/-/bearychat-1.2.0.tgz#8d31821849d10076eaa082c468b45facf0d033e4"
   dependencies:
     babel-plugin-add-module-exports "^0.2.1"
     isomorphic-fetch "^2.2.1"
+
+co@^4.6.0:
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
 
 colors@1.0.x:
   version "1.0.3"
