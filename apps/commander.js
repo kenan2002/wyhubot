@@ -2,6 +2,7 @@
 
 const _ = require('lodash');
 const co = require('co');
+const fetch = require('isomorphic-fetch');
 
 module.exports = function (clients, utils) {
   const rtm = clients.rtm;
@@ -171,6 +172,31 @@ module.exports = function (clients, utils) {
           reply(utils.createMentionString(message.uid) + ' 慢走，不送');
         } catch (e) {
           reply('出错了：' + e.message);
+        }
+      });
+    },
+
+    'stage-check': function() {
+      const message = this;
+
+      const reply = utils.createReplyWithTyping(rtm, {
+        refer_key: message.key,
+        vchannel_id: message.vchannel_id,
+        channel_id: message.channel_id,
+        uid: me.id
+      });
+
+      co(function *() {
+        try {
+          reply('正在检查 stage 上的 snitch 是死是活');
+          const response = yield fetch('http://stage.bearychat.com/api/hello');
+          if (response.status === 200) {
+            reply('stage 活着');
+          } else {
+            reply('stage 死了：' + response.status);
+          }
+        } catch (e) {
+          reply('stage 不知是死是活');
         }
       });
     }
