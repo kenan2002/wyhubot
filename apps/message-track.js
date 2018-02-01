@@ -33,6 +33,9 @@ function track(clients, utils) {
       case 'update_channel_message':
         handleMessageUpdate(message.data);
         break;
+      case 'new_message_pin':
+        handleNewMessagePin(message.data);
+        break;
       default:
     }
   }
@@ -61,5 +64,19 @@ function track(clients, utils) {
     }
 
     keyToMessageMap.set(key, message);
+  }
+
+  function handleNewMessagePin(data) {
+    const {message, uid} = data;
+
+    const reply = utils.createReplyWithTyping(rtm, {
+      refer_key: message.key,
+      vchannel_id: message.vchannel_id,
+      channel_id: message.vchannel_id,
+      uid: me.id
+    });
+
+    const mention = utils.createMentionString(uid);
+    reply(mention + ' 你偷偷置顶了这条消息');
   }
 }
