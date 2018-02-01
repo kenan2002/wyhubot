@@ -97,15 +97,18 @@ function track(clients, utils) {
   }
 
   function handleDeleteMessagePin(data) {
-    const {message_key, uid, vchannel_id} = data;
-    if (pinMap.has(message_key)) {
-      const pinInfo = pinMap.get(message_key);
-      if (pinInfo.userId === uid) {
-        http.message.delete({
-          vchannel_id,
-          message_key: pinInfo.pinMentionKey
-        });
+    co(function*() {
+      const {message_key, uid, vchannel_id} = data;
+      if (pinMap.has(message_key)) {
+        const pinInfo = pinMap.get(message_key);
+        if (pinInfo.userId === uid) {
+          yield http.message.delete({
+            vchannel_id,
+            message_key: pinInfo.pinMentionKey
+          });
+          pinMap.delete(message_key);
+        }
       }
-    }
+    });
   }
 }
