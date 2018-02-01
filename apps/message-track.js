@@ -6,6 +6,7 @@ const _ = require('lodash');
 const co = require('co');
 
 const keyToMessageMap = new Map();
+const pinMap = new Map();
 
 function track(clients, utils) {
   const rtm = clients.rtm;
@@ -36,11 +37,19 @@ function track(clients, utils) {
       case 'new_message_pin':
         handleNewMessagePin(message.data);
         break;
+      case 'delete_message_pin':
+        handleDeleteMessagePin(message.data);
+        break;
       default:
     }
   }
 
   function handleMessageUpdate(message) {
+    // ignore the hubot itself
+    if (message.uid === me.id) {
+      return;
+    }
+
     const key = message.key;
 
     if (!keyToMessageMap.has(key)) {
@@ -69,14 +78,34 @@ function track(clients, utils) {
   function handleNewMessagePin(data) {
     const {message, uid} = data;
 
-    const reply = utils.createReplyWithTyping(rtm, {
-      refer_key: message.key,
-      vchannel_id: message.vchannel_id,
-      channel_id: message.vchannel_id,
-      uid: me.id
-    });
+    co(function*() {
+      const reply = utils.createReplyWithTyping(rtm, {
+        refer_key: message.key,
+        vchannel_id: message.vchannel_id,
+        channel_id: message.vchannel_id,
+        uid: me.id
+      });
 
-    const mention = utils.createMentionString(uid);
-    reply(mention + ' 你偷偷置顶了这条消息');
+      const mention = utils.createMentionString(uid);
+      const result = yield reply(mention + ' 你偷偷置顶了这条消息');
+
+      pinMap.set(message.key, {
+        pinMentionKey: result.key,
+        userId: uid,
+      });
+    });
+  }
+
+  function handleDeleteMessagePin(data) {
+    const {message_key, uid, vchannel_id} = data;
+    if (pinMap.has(message_key)) {
+      const pinInfo = pinMap.get(message_key);
+      if (pinInfo.userId === uid) {
+        http.message.delete({
+          vchannel_id,
+          message_key: pinInfo.pinMentionKey
+        });
+      }
+    }
   }
 }
